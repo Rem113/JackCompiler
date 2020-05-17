@@ -538,6 +538,7 @@ impl Parser {
 
 		// Subroutine
 		if bracket_or_else.value == "(" || bracket_or_else.value == "." {
+			self.tokens.insert(0, var_name_or_sub_name);
 			term_node.add_child(self.parse_subroutine_call());
 			return TreeElement::Node(term_node);
 		};

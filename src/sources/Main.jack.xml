@@ -3,10 +3,8 @@
   <identifier>Main</identifier>
   <symbol>{</symbol>
   <subroutine_dec>
-    <keyword>method</keyword>
-    <type>
-      <keyword>int</keyword>
-    </type>
+    <keyword>function</keyword>
+    <keyword>void</keyword>
     <subroutine_name>
       <identifier>main</identifier>
     </subroutine_name>
@@ -18,40 +16,112 @@
         <keyword>var</keyword>
         <type>
           <class_name>
-            <identifier>Hangman</identifier>
+            <identifier>Array</identifier>
           </class_name>
         </type>
         <var_name>
-          <identifier>hangman</identifier>
+          <identifier>a</identifier>
         </var_name>
         <symbol>;</symbol>
       </var_dec>
       <var_dec>
         <keyword>var</keyword>
         <type>
-          <keyword>char</keyword>
+          <keyword>int</keyword>
         </type>
         <var_name>
-          <identifier>letter</identifier>
+          <identifier>length</identifier>
         </var_name>
+        <symbol>;</symbol>
+      </var_dec>
+      <var_dec>
+        <keyword>var</keyword>
+        <type>
+          <keyword>int</keyword>
+        </type>
+        <var_name>
+          <identifier>i</identifier>
+        </var_name>
+        <symbol>,</symbol>
+        <symbol>sum</symbol>
         <symbol>;</symbol>
       </var_dec>
       <statements>
         <let_statement>
           <keyword>let</keyword>
           <var_name>
-            <identifier>hangman</identifier>
+            <identifier>length</identifier>
           </var_name>
           <symbol>=</symbol>
           <expression>
             <term>
               <subroutine_call>
+                <class_name>
+                  <identifier>Keyboard</identifier>
+                </class_name>
+                <symbol>.</symbol>
+                <subroutine_name>
+                  <identifier>readInt</identifier>
+                </subroutine_name>
+                <symbol>(</symbol>
+                <expression_list>
+                  <expression>
+                    <term>
+                      <string_constant>
+                        <string_constant>"HOW MANY NUMBERS? "</string_constant>
+                      </string_constant>
+                    </term>
+                  </expression>
+                </expression_list>
+                <symbol>)</symbol>
+              </subroutine_call>
+            </term>
+          </expression>
+          <symbol>;</symbol>
+        </let_statement>
+        <let_statement>
+          <keyword>let</keyword>
+          <var_name>
+            <identifier>a</identifier>
+          </var_name>
+          <symbol>=</symbol>
+          <expression>
+            <term>
+              <subroutine_call>
+                <class_name>
+                  <identifier>Array</identifier>
+                </class_name>
+                <symbol>.</symbol>
                 <subroutine_name>
                   <identifier>new</identifier>
                 </subroutine_name>
                 <symbol>(</symbol>
+                <expression_list>
+                  <expression>
+                    <term>
+                      <var_name>
+                        <identifier>length</identifier>
+                      </var_name>
+                    </term>
+                  </expression>
+                </expression_list>
                 <symbol>)</symbol>
               </subroutine_call>
+            </term>
+          </expression>
+          <symbol>;</symbol>
+        </let_statement>
+        <let_statement>
+          <keyword>let</keyword>
+          <var_name>
+            <identifier>i</identifier>
+          </var_name>
+          <symbol>=</symbol>
+          <expression>
+            <term>
+              <integer_constant>
+                <integer_constant>0</integer_constant>
+              </integer_constant>
             </term>
           </expression>
           <symbol>;</symbol>
@@ -61,109 +131,193 @@
           <symbol>(</symbol>
           <expression>
             <term>
-              <unary_op>~</unary_op>
-              <term>
-                <subroutine_call>
-                  <subroutine_name>
-                    <identifier>is_hanged</identifier>
-                  </subroutine_name>
-                  <symbol>(</symbol>
-                  <symbol>)</symbol>
-                </subroutine_call>
-              </term>
+              <var_name>
+                <identifier>i</identifier>
+              </var_name>
             </term>
             <op>
-              <symbol>&</symbol>
+              <symbol><</symbol>
             </op>
             <term>
-              <unary_op>~</unary_op>
-              <term>
-                <subroutine_call>
-                  <subroutine_name>
-                    <identifier>has_won</identifier>
-                  </subroutine_name>
-                  <symbol>(</symbol>
-                  <symbol>)</symbol>
-                </subroutine_call>
-              </term>
+              <var_name>
+                <identifier>length</identifier>
+              </var_name>
             </term>
           </expression>
           <symbol>)</symbol>
           <symbol>{</symbol>
           <statements>
-            <do_statement>
-              <keyword>do</keyword>
-              <subroutine_call>
-                <class_name>
-                  <identifier>hangman</identifier>
-                </class_name>
-                <symbol>.</symbol>
-                <subroutine_name>
-                  <identifier>draw</identifier>
-                </subroutine_name>
-                <symbol>(</symbol>
-                <symbol>)</symbol>
-              </subroutine_call>
-              <symbol>;</symbol>
-            </do_statement>
             <let_statement>
               <keyword>let</keyword>
               <var_name>
-                <identifier>letter</identifier>
+                <identifier>a</identifier>
               </var_name>
+              <symbol>[</symbol>
+              <expression>
+                <term>
+                  <var_name>
+                    <identifier>i</identifier>
+                  </var_name>
+                </term>
+              </expression>
+              <symbol>]</symbol>
               <symbol>=</symbol>
               <expression>
                 <term>
                   <subroutine_call>
+                    <class_name>
+                      <identifier>Keyboard</identifier>
+                    </class_name>
+                    <symbol>.</symbol>
                     <subroutine_name>
-                      <identifier>readChar</identifier>
+                      <identifier>readInt</identifier>
                     </subroutine_name>
                     <symbol>(</symbol>
+                    <expression_list>
+                      <expression>
+                        <term>
+                          <string_constant>
+                            <string_constant>"ENTER THE NEXT NUMBER: "</string_constant>
+                          </string_constant>
+                        </term>
+                      </expression>
+                    </expression_list>
                     <symbol>)</symbol>
                   </subroutine_call>
                 </term>
               </expression>
               <symbol>;</symbol>
             </let_statement>
-            <do_statement>
-              <keyword>do</keyword>
-              <subroutine_call>
-                <class_name>
-                  <identifier>Output</identifier>
-                </class_name>
-                <symbol>.</symbol>
-                <subroutine_name>
-                  <identifier>backSpace</identifier>
-                </subroutine_name>
-                <symbol>(</symbol>
-                <symbol>)</symbol>
-              </subroutine_call>
+            <let_statement>
+              <keyword>let</keyword>
+              <var_name>
+                <identifier>i</identifier>
+              </var_name>
+              <symbol>=</symbol>
+              <expression>
+                <term>
+                  <var_name>
+                    <identifier>i</identifier>
+                  </var_name>
+                </term>
+                <op>
+                  <symbol>+</symbol>
+                </op>
+                <term>
+                  <integer_constant>
+                    <integer_constant>1</integer_constant>
+                  </integer_constant>
+                </term>
+              </expression>
               <symbol>;</symbol>
-            </do_statement>
-            <do_statement>
-              <keyword>do</keyword>
-              <subroutine_call>
-                <class_name>
-                  <identifier>hangman</identifier>
-                </class_name>
-                <symbol>.</symbol>
-                <subroutine_name>
-                  <identifier>guess</identifier>
-                </subroutine_name>
-                <symbol>(</symbol>
-                <expression_list>
+            </let_statement>
+          </statements>
+          <symbol>}</symbol>
+        </while_statement>
+        <let_statement>
+          <keyword>let</keyword>
+          <var_name>
+            <identifier>i</identifier>
+          </var_name>
+          <symbol>=</symbol>
+          <expression>
+            <term>
+              <integer_constant>
+                <integer_constant>0</integer_constant>
+              </integer_constant>
+            </term>
+          </expression>
+          <symbol>;</symbol>
+        </let_statement>
+        <let_statement>
+          <keyword>let</keyword>
+          <var_name>
+            <identifier>sum</identifier>
+          </var_name>
+          <symbol>=</symbol>
+          <expression>
+            <term>
+              <integer_constant>
+                <integer_constant>0</integer_constant>
+              </integer_constant>
+            </term>
+          </expression>
+          <symbol>;</symbol>
+        </let_statement>
+        <while_statement>
+          <keyword>while</keyword>
+          <symbol>(</symbol>
+          <expression>
+            <term>
+              <var_name>
+                <identifier>i</identifier>
+              </var_name>
+            </term>
+            <op>
+              <symbol><</symbol>
+            </op>
+            <term>
+              <var_name>
+                <identifier>length</identifier>
+              </var_name>
+            </term>
+          </expression>
+          <symbol>)</symbol>
+          <symbol>{</symbol>
+          <statements>
+            <let_statement>
+              <keyword>let</keyword>
+              <var_name>
+                <identifier>sum</identifier>
+              </var_name>
+              <symbol>=</symbol>
+              <expression>
+                <term>
+                  <var_name>
+                    <identifier>sum</identifier>
+                  </var_name>
+                </term>
+                <op>
+                  <symbol>+</symbol>
+                </op>
+                <term>
+                  <identifier>a</identifier>
+                  <symbol>[</symbol>
                   <expression>
                     <term>
                       <var_name>
-                        <identifier>letter</identifier>
+                        <identifier>i</identifier>
                       </var_name>
                     </term>
                   </expression>
-                </expression_list>
-                <symbol>)</symbol>
-              </subroutine_call>
+                  <symbol>]</symbol>
+                </term>
+              </expression>
               <symbol>;</symbol>
-            </do_statement>
+            </let_statement>
+            <let_statement>
+              <keyword>let</keyword>
+              <var_name>
+                <identifier>i</identifier>
+              </var_name>
+              <symbol>=</symbol>
+              <expression>
+                <term>
+                  <var_name>
+                    <identifier>i</identifier>
+                  </var_name>
+                </term>
+                <op>
+                  <symbol>+</symbol>
+                </op>
+                <term>
+                  <integer_constant>
+                    <integer_constant>1</integer_constant>
+                  </integer_constant>
+                </term>
+              </expression>
+              <symbol>;</symbol>
+            </let_statement>
           </statements>
           <symbol>}</symbol>
         </while_statement>
@@ -171,13 +325,54 @@
           <keyword>do</keyword>
           <subroutine_call>
             <class_name>
-              <identifier>hangman</identifier>
+              <identifier>Output</identifier>
             </class_name>
             <symbol>.</symbol>
             <subroutine_name>
-              <identifier>draw</identifier>
+              <identifier>printString</identifier>
             </subroutine_name>
             <symbol>(</symbol>
+            <expression_list>
+              <expression>
+                <term>
+                  <string_constant>
+                    <string_constant>"THE AVERAGE IS: "</string_constant>
+                  </string_constant>
+                </term>
+              </expression>
+            </expression_list>
+            <symbol>)</symbol>
+          </subroutine_call>
+          <symbol>;</symbol>
+        </do_statement>
+        <do_statement>
+          <keyword>do</keyword>
+          <subroutine_call>
+            <class_name>
+              <identifier>Output</identifier>
+            </class_name>
+            <symbol>.</symbol>
+            <subroutine_name>
+              <identifier>printInt</identifier>
+            </subroutine_name>
+            <symbol>(</symbol>
+            <expression_list>
+              <expression>
+                <term>
+                  <var_name>
+                    <identifier>sum</identifier>
+                  </var_name>
+                </term>
+                <op>
+                  <symbol>/</symbol>
+                </op>
+                <term>
+                  <var_name>
+                    <identifier>length</identifier>
+                  </var_name>
+                </term>
+              </expression>
+            </expression_list>
             <symbol>)</symbol>
           </subroutine_call>
           <symbol>;</symbol>
@@ -197,103 +392,8 @@
           </subroutine_call>
           <symbol>;</symbol>
         </do_statement>
-        <if_statement>
-          <keyword>if</keyword>
-          <symbol>(</symbol>
-          <expression>
-            <term>
-              <subroutine_call>
-                <subroutine_name>
-                  <identifier>is_hanged</identifier>
-                </subroutine_name>
-                <symbol>(</symbol>
-                <symbol>)</symbol>
-              </subroutine_call>
-            </term>
-          </expression>
-          <symbol>)</symbol>
-          <symbol>{</symbol>
-          <statements>
-            <do_statement>
-              <keyword>do</keyword>
-              <subroutine_call>
-                <class_name>
-                  <identifier>Output</identifier>
-                </class_name>
-                <symbol>.</symbol>
-                <subroutine_name>
-                  <identifier>printString</identifier>
-                </subroutine_name>
-                <symbol>(</symbol>
-                <expression_list>
-                  <expression>
-                    <term>
-                      <string_constant>
-                        <string_constant>"YOU LOST"</string_constant>
-                      </string_constant>
-                    </term>
-                  </expression>
-                </expression_list>
-                <symbol>)</symbol>
-              </subroutine_call>
-              <symbol>;</symbol>
-            </do_statement>
-          </statements>
-          <symbol>}</symbol>
-        </if_statement>
-        <if_statement>
-          <keyword>if</keyword>
-          <symbol>(</symbol>
-          <expression>
-            <term>
-              <subroutine_call>
-                <subroutine_name>
-                  <identifier>has_won</identifier>
-                </subroutine_name>
-                <symbol>(</symbol>
-                <symbol>)</symbol>
-              </subroutine_call>
-            </term>
-          </expression>
-          <symbol>)</symbol>
-          <symbol>{</symbol>
-          <statements>
-            <do_statement>
-              <keyword>do</keyword>
-              <subroutine_call>
-                <class_name>
-                  <identifier>Output</identifier>
-                </class_name>
-                <symbol>.</symbol>
-                <subroutine_name>
-                  <identifier>printString</identifier>
-                </subroutine_name>
-                <symbol>(</symbol>
-                <expression_list>
-                  <expression>
-                    <term>
-                      <string_constant>
-                        <string_constant>"YOU WON"</string_constant>
-                      </string_constant>
-                    </term>
-                  </expression>
-                </expression_list>
-                <symbol>)</symbol>
-              </subroutine_call>
-              <symbol>;</symbol>
-            </do_statement>
-          </statements>
-          <symbol>}</symbol>
-        </if_statement>
         <return_statement>
           <keyword>return</keyword>
-          <expression>
-            <term>
-              <integer_constant>
-                <integer_constant>0</integer_constant>
-              </integer_constant>
-            </term>
-          </expression>
           <symbol>;</symbol>
         </return_statement>
       </statements>
