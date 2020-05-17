@@ -154,28 +154,23 @@ impl Parser {
 
 		var_dec_node.add_child(self.parse_var_name());
 
-		match self.peek().value.as_str() {
-			"," => loop {
-				var_dec_node.add_child(TreeElement::Leaf(Leaf::new(
-					String::from("symbol"),
-					self.next().value,
-				)));
+		loop {
+			let next_token = self.peek();
 
-				if self.peek().value == ";" {
-					var_dec_node.add_child(TreeElement::Leaf(Leaf::new(
-						String::from("symbol"),
-						self.next().value,
-					)));
-					return TreeElement::Node(var_dec_node);
-				}
-			},
-			_ => {
+			if next_token.value == ";" {
 				var_dec_node.add_child(TreeElement::Leaf(Leaf::new(
 					String::from("symbol"),
 					self.next().value,
 				)));
-				TreeElement::Node(var_dec_node)
+				return TreeElement::Node(var_dec_node);
 			}
+
+			var_dec_node.add_child(TreeElement::Leaf(Leaf::new(
+				String::from("symbol"),
+				self.next().value,
+			)));
+
+			var_dec_node.add_child(self.parse_var_name());
 		}
 	}
 

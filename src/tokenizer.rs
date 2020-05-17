@@ -92,9 +92,9 @@ impl Tokenizer {
 
 		if STRING_CONSTANTS.is_match(&code) {
 			let bounds: Match = STRING_CONSTANTS.find(&code).unwrap();
-			let value: String = code[bounds.start()..bounds.end()].to_owned();
+			let value: String = code[(bounds.start() + 1)..(bounds.end() - 1)].to_owned();
 
-			self.remove_n_first_chars(value.len());
+			self.remove_n_first_chars(value.len() + 2);
 
 			return Token {
 				token: TokenType::StringConstant,
