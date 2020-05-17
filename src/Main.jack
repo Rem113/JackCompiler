@@ -1,8 +1,17 @@
 class Main {
+
+	field int a, b, c;
+	static boolean d;
+
+	// Entry point
 	method void main() {
 		var int x;
+		var Array y;
+		var int z;
 		let x = x + 1;
+		let y = Array.new();
+		let z = y[2];
 
-		return;
+		do Output.printString("Hello, World!");
 	}
 }

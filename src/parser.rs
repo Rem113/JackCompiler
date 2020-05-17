@@ -80,10 +80,7 @@ impl Parser {
 			subrountine_dec_node.add_child(self.parse_type());
 		};
 
-		subrountine_dec_node.add_child(TreeElement::Leaf(Leaf::new(
-			String::from("identifier"),
-			self.next().value,
-		)));
+		subrountine_dec_node.add_child(self.parse_subroutine_name());
 
 		subrountine_dec_node.add_child(TreeElement::Leaf(Leaf::new(
 			String::from("symbol"),
@@ -103,6 +100,15 @@ impl Parser {
 		subrountine_dec_node.add_child(self.parse_subroutine_body());
 
 		TreeElement::Node(subrountine_dec_node)
+	}
+
+	fn parse_subroutine_name(&mut self) -> TreeElement {
+		let mut subroutine_name_node = Node::new(String::from("subroutine_name"));
+		subroutine_name_node.add_child(TreeElement::Leaf(Leaf::new(
+			String::from("identifier"),
+			self.next().value,
+		)));
+		TreeElement::Node(subroutine_name_node)
 	}
 
 	fn parse_subroutine_body(&mut self) -> TreeElement {
@@ -382,24 +388,16 @@ impl Parser {
 
 		match self.peek().value.as_str() {
 			"." => {
-				subroutine_call_node.add_child(TreeElement::Leaf(Leaf::new(
-					String::from("class_name"),
-					func_or_class.value,
-				)));
+				self.tokens.insert(0, func_or_class);
+				subroutine_call_node.add_child(self.parse_class_name());
 				subroutine_call_node.add_child(TreeElement::Leaf(Leaf::new(
 					String::from("symbol"),
 					self.next().value,
 				)));
-				subroutine_call_node.add_child(TreeElement::Leaf(Leaf::new(
-					String::from("subroutine_name"),
-					self.next().value,
-				)));
+				subroutine_call_node.add_child(self.parse_subroutine_name());
 			}
 			_ => {
-				subroutine_call_node.add_child(TreeElement::Leaf(Leaf::new(
-					String::from("subroutine_name"),
-					self.next().value,
-				)));
+				subroutine_call_node.add_child(self.parse_subroutine_name());
 			}
 		};
 
@@ -442,18 +440,18 @@ impl Parser {
 
 		expression_node.add_child(self.parse_term());
 
-		let op_or_else = self.peek();
-
 		loop {
+			let op_or_else = self.peek();
+
 			if op_or_else.value != "+"
-				|| op_or_else.value != "-"
-				|| op_or_else.value != "*"
-				|| op_or_else.value != "/"
-				|| op_or_else.value != "&"
-				|| op_or_else.value != "|"
-				|| op_or_else.value != "<"
-				|| op_or_else.value != ">"
-				|| op_or_else.value != "="
+				&& op_or_else.value != "-"
+				&& op_or_else.value != "*"
+				&& op_or_else.value != "/"
+				&& op_or_else.value != "&"
+				&& op_or_else.value != "|"
+				&& op_or_else.value != "<"
+				&& op_or_else.value != ">"
+				&& op_or_else.value != "="
 			{
 				return TreeElement::Node(expression_node);
 			}
@@ -464,18 +462,27 @@ impl Parser {
 	}
 
 	fn parse_op(&mut self) -> TreeElement {
-		TreeElement::Leaf(Leaf::new(String::from("symbol"), self.next().value))
+		let mut op_node = Node::new(String::from("op"));
+		op_node.add_child(TreeElement::Leaf(Leaf::new(
+			String::from("symbol"),
+			self.next().value,
+		)));
+		TreeElement::Node(op_node)
 	}
 
 	fn parse_term(&mut self) -> TreeElement {
+		let mut term_node = Node::new(String::from("term"));
+
 		let next_token = self.peek();
 
 		if next_token.token == TokenType::IntegerConstant {
-			return self.parse_integer_constant();
+			term_node.add_child(self.parse_integer_constant());
+			return TreeElement::Node(term_node);
 		};
 
 		if next_token.token == TokenType::StringConstant {
-			return self.parse_string_constant();
+			term_node.add_child(self.parse_string_constant());
+			return TreeElement::Node(term_node);
 		};
 
 		if next_token.value == "true"
@@ -483,11 +490,11 @@ impl Parser {
 			|| next_token.value == "null"
 			|| next_token.value == "this"
 		{
-			return self.parse_keyword_constant();
+			term_node.add_child(self.parse_keyword_constant());
+			return TreeElement::Node(term_node);
 		};
 
 		if next_token.value == "(" {
-			let mut term_node = Node::new(String::from("term"));
 			term_node.add_child(TreeElement::Leaf(Leaf::new(
 				String::from("symbol"),
 				self.next().value,
@@ -501,7 +508,6 @@ impl Parser {
 		};
 
 		if next_token.value == "-" || next_token.value == "~" {
-			let mut term_node = Node::new(String::from("term"));
 			term_node.add_child(self.parse_unary_op());
 			term_node.add_child(self.parse_term());
 			return TreeElement::Node(term_node);
@@ -514,7 +520,6 @@ impl Parser {
 
 		// Var[]
 		if bracket_or_else.value == "[" {
-			let mut term_node = Node::new(String::from("term"));
 			term_node.add_child(TreeElement::Leaf(Leaf::new(
 				String::from("identifier"),
 				var_name_or_sub_name.value,
@@ -533,10 +538,16 @@ impl Parser {
 
 		// Subroutine
 		if bracket_or_else.value == "(" || bracket_or_else.value == "." {
-			return self.parse_subroutine_call();
+			term_node.add_child(self.parse_subroutine_call());
+			return TreeElement::Node(term_node);
 		};
 
-		return self.parse_var_name();
+		// Var name
+		self.tokens.insert(0, var_name_or_sub_name);
+
+		term_node.add_child(self.parse_var_name());
+
+		return TreeElement::Node(term_node);
 	}
 
 	fn parse_unary_op(&mut self) -> TreeElement {
@@ -544,24 +555,30 @@ impl Parser {
 	}
 
 	fn parse_integer_constant(&mut self) -> TreeElement {
-		TreeElement::Leaf(Leaf::new(
+		let mut integer_constant_node = Node::new(String::from("integer_constant"));
+		integer_constant_node.add_child(TreeElement::Leaf(Leaf::new(
 			String::from("integer_constant"),
 			self.next().value,
-		))
+		)));
+		TreeElement::Node(integer_constant_node)
 	}
 
 	fn parse_string_constant(&mut self) -> TreeElement {
-		TreeElement::Leaf(Leaf::new(
+		let mut string_constant_node = Node::new(String::from("string_constant"));
+		string_constant_node.add_child(TreeElement::Leaf(Leaf::new(
 			String::from("string_constant"),
 			self.next().value,
-		))
+		)));
+		TreeElement::Node(string_constant_node)
 	}
 
 	fn parse_keyword_constant(&mut self) -> TreeElement {
-		TreeElement::Leaf(Leaf::new(
+		let mut keyword_constant_node = Node::new(String::from("keyword_constant"));
+		keyword_constant_node.add_child(TreeElement::Leaf(Leaf::new(
 			String::from("keyword_constant"),
 			self.next().value,
-		))
+		)));
+		TreeElement::Node(keyword_constant_node)
 	}
 
 	fn parse_parameter_list(&mut self) -> Option<TreeElement> {
@@ -626,21 +643,38 @@ impl Parser {
 	}
 
 	fn parse_var_name(&mut self) -> TreeElement {
-		TreeElement::Leaf(Leaf::new(String::from("identifier"), self.next().value))
+		let mut var_name_node = Node::new(String::from("var_name"));
+		var_name_node.add_child(TreeElement::Leaf(Leaf::new(
+			String::from("identifier"),
+			self.next().value,
+		)));
+		TreeElement::Node(var_name_node)
 	}
 
 	fn parse_type(&mut self) -> TreeElement {
+		let mut type_node = Node::new(String::from("type"));
+
 		let front_token = self.peek();
 
 		if front_token.value == "int" || front_token.value == "char" || front_token.value == "boolean" {
-			TreeElement::Leaf(Leaf::new(String::from("keyword"), self.next().value))
+			type_node.add_child(TreeElement::Leaf(Leaf::new(
+				String::from("keyword"),
+				self.next().value,
+			)));
 		} else {
-			self.parse_class_name()
-		}
+			type_node.add_child(self.parse_class_name())
+		};
+
+		TreeElement::Node(type_node)
 	}
 
 	fn parse_class_name(&mut self) -> TreeElement {
-		TreeElement::Leaf(Leaf::new(String::from("identifier"), self.next().value))
+		let mut class_name_node = Node::new(String::from("class_name"));
+		class_name_node.add_child(TreeElement::Leaf(Leaf::new(
+			String::from("identifier"),
+			self.next().value,
+		)));
+		TreeElement::Node(class_name_node)
 	}
 
 	pub fn new(tokens: VecDeque<Token>) -> Parser {
