@@ -22,7 +22,7 @@ pub struct Tokenizer {
 }
 
 lazy_static! {
-	static ref KEYWORDS: Regex = Regex::new("^(class|constructor|function|method|field|static|var|int|char|boolean|void|true|false|null|this|let|do|if|else|while|return)").unwrap();
+	static ref KEYWORDS: Regex = Regex::new(r#"^(class|constructor|function|method|field|static|var|int|char|boolean|void|true|false|null|this|let|do|if|else|while|return)\b"#).unwrap();
 	static ref SYMBOLS: Regex = Regex::new(r#"^[\{\}\(\)\[\].,;\+\-\*/&|<>=~]"#).unwrap();
 	static ref IDENTIFIERS: Regex = Regex::new("^[_[:alpha:]][_[:alnum:]]*").unwrap();
 	static ref INTEGER_CONSTANTS: Regex = Regex::new("^[0-9]{1,5}").unwrap();
@@ -44,7 +44,7 @@ impl Tokenizer {
 	// Returns the next token in the code
 	pub fn next(&mut self) -> Token {
 		self.code = self.code.trim_start().to_owned();
-		let code = &self.code;
+		let code = self.code.clone();
 
 		if COMMENTS.is_match(&code) {
 			let bounds: Match = COMMENTS.find(&code).unwrap();

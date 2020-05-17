@@ -1,0 +1,32 @@
+class Main {
+	method int main() {
+		var Hangman hangman;
+		var char letter;
+
+		let hangman = Hangman.new();
+
+		while (~hangman.is_hanged() & ~hangman.has_won()) {
+			do hangman.draw();
+
+			let letter = Keyboard.readChar();
+			do Output.backSpace();
+			
+			do hangman.guess(letter);
+		}
+
+		do hangman.draw();
+
+		do Output.println();
+
+		if (hangman.is_hanged()) {
+			do Output.printString("YOU LOST");
+		}
+
+		if (hangman.has_won()) {
+			do Output.printString("YOU WON");
+		}
+
+		
+		return 0;
+	}
+}

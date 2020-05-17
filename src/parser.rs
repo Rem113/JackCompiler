@@ -584,7 +584,6 @@ impl Parser {
 	fn parse_parameter_list(&mut self) -> Option<TreeElement> {
 		let type_or_else = self.peek();
 
-		// Triche
 		if type_or_else.value != "int"
 			&& type_or_else.value != "char"
 			&& type_or_else.value != "boolean"

@@ -2,7 +2,10 @@
 extern crate lazy_static;
 
 use std::collections::VecDeque;
-use std::fs::read_to_string;
+use std::env::args;
+use std::fs::{read_dir, read_to_string, File};
+use std::io::prelude::*;
+use std::io::BufWriter;
 use std::path::Path;
 
 mod tokenizer;
@@ -40,13 +43,47 @@ fn tree_from_tokens(tokens: Vec<Token>) -> Tree {
 }
 
 fn main() {
-    let path = Path::new("src/Main.jack");
+    let args: Vec<String> = args().collect();
 
-    let tokens = tokens_for_file(path);
+    if args.len() != 2 {
+        panic!("Usage: jack <path>");
+    };
 
-    // tokens.iter().for_each(|token| println!("{}", token.value));
+    let dir_path = Path::new(&args[1]);
 
-    let tree = tree_from_tokens(tokens);
+    let read_dir = match read_dir(dir_path) {
+        Ok(dir) => dir,
+        Err(_) => panic!("Invalid path"),
+    };
 
-    println!("{}", tree.to_xml());
+    read_dir
+        .filter_map(|file| match file {
+            Ok(file) => {
+                let file_name = file.file_name().to_string_lossy().into_owned();
+                if file_name.ends_with(".jack") {
+                    Some(file_name)
+                } else {
+                    None
+                }
+            }
+            Err(_) => None,
+        })
+        .for_each(|file| {
+            let path_string = &format!("{}/{}", args[1], file);
+            let path = Path::new(path_string);
+            let tokens = tokens_for_file(path);
+            let tree = tree_from_tokens(tokens);
+
+            let out_path_string = &format!("{}/{}.xml", args[1], file);
+            let out_path = Path::new(out_path_string);
+            let file = match File::create(out_path) {
+                Ok(file) => file,
+                Err(err) => panic!("{}", err),
+            };
+            let mut writer = BufWriter::new(file);
+            match writer.write(tree.to_xml().as_bytes()) {
+                Ok(_) => {}
+                Err(err) => panic!("{}", err),
+            };
+        });
 }
