@@ -551,30 +551,24 @@ impl Parser {
 	}
 
 	fn parse_integer_constant(&mut self) -> TreeElement {
-		let mut integer_constant_node = Node::new(String::from("integer_constant"));
-		integer_constant_node.add_child(TreeElement::Leaf(Leaf::new(
+		TreeElement::Leaf(Leaf::new(
 			String::from("integer_constant"),
 			self.next().value,
-		)));
-		TreeElement::Node(integer_constant_node)
+		))
 	}
 
 	fn parse_string_constant(&mut self) -> TreeElement {
-		let mut string_constant_node = Node::new(String::from("string_constant"));
-		string_constant_node.add_child(TreeElement::Leaf(Leaf::new(
+		TreeElement::Leaf(Leaf::new(
 			String::from("string_constant"),
 			self.next().value,
-		)));
-		TreeElement::Node(string_constant_node)
+		))
 	}
 
 	fn parse_keyword_constant(&mut self) -> TreeElement {
-		let mut keyword_constant_node = Node::new(String::from("keyword_constant"));
-		keyword_constant_node.add_child(TreeElement::Leaf(Leaf::new(
+		TreeElement::Leaf(Leaf::new(
 			String::from("keyword_constant"),
 			self.next().value,
-		)));
-		TreeElement::Node(keyword_constant_node)
+		))
 	}
 
 	fn parse_parameter_list(&mut self) -> Option<TreeElement> {

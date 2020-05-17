@@ -21,7 +21,7 @@ class Main {
 					let i = i + 1;
 			}
 			
-			let i = 0;
+			let i = this;
 			let sum = 0;
 			
 			while (i < length) {
