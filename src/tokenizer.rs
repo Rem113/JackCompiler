@@ -27,7 +27,8 @@ lazy_static! {
 	static ref IDENTIFIERS: Regex = Regex::new("^[_[:alpha:]][_[:alnum:]]*").unwrap();
 	static ref INTEGER_CONSTANTS: Regex = Regex::new("^[0-9]{1,5}").unwrap();
 	static ref STRING_CONSTANTS: Regex = Regex::new(r#"^".*""#).unwrap();
-	static ref COMMENTS: Regex = Regex::new("^//.*").unwrap();
+	static ref INLINE_COMMENT: Regex = Regex::new("^//.*").unwrap();
+	static ref MULTILINE_COMMENT: Regex = Regex::new(r#"^(/\*)(.|\n)*?(\*/)"#).unwrap();
 }
 
 impl Tokenizer {
@@ -46,8 +47,16 @@ impl Tokenizer {
 		self.code = self.code.trim_start().to_owned();
 		let code = self.code.clone();
 
-		if COMMENTS.is_match(&code) {
-			let bounds: Match = COMMENTS.find(&code).unwrap();
+		if INLINE_COMMENT.is_match(&code) {
+			let bounds: Match = INLINE_COMMENT.find(&code).unwrap();
+
+			self.remove_n_first_chars(bounds.end() - bounds.start());
+
+			return self.next();
+		};
+
+		if MULTILINE_COMMENT.is_match(&code) {
+			let bounds: Match = MULTILINE_COMMENT.find(&code).unwrap();
 
 			self.remove_n_first_chars(bounds.end() - bounds.start());
 
