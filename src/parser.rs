@@ -370,7 +370,10 @@ impl Parser {
 
 		// Var[]
 		if bracket_or_else.value == "[" {
-			result.push_str(&format!("<identifier>{}</identifier>\n", self.next().value));
+			result.push_str(&format!(
+				"<identifier>{}</identifier>\n",
+				var_name_or_sub_name.value
+			));
 			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 
 			result.push_str(&self.parse_expression());
