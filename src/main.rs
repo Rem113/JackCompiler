@@ -14,9 +14,6 @@ use tokenizer::{Token, TokenType, Tokenizer};
 mod parser;
 use parser::Parser;
 
-mod tree;
-use tree::Tree;
-
 fn tokens_for_file(path: &Path) -> Vec<Token> {
     let content = match read_to_string(path) {
         Ok(content) => content,
@@ -36,7 +33,7 @@ fn tokens_for_file(path: &Path) -> Vec<Token> {
     }
 }
 
-fn tree_from_tokens(tokens: Vec<Token>) -> Tree {
+fn xml_from_tokens(tokens: Vec<Token>) -> String {
     let mut parser = Parser::new(VecDeque::from(tokens));
 
     parser.parse()
@@ -72,7 +69,7 @@ fn main() {
             let path_string = &format!("{}/{}", args[1], file);
             let path = Path::new(path_string);
             let tokens = tokens_for_file(path);
-            let tree = tree_from_tokens(tokens);
+            let xml = xml_from_tokens(tokens);
 
             let out_path_string = &format!("{}/{}.xml", args[1], file);
             let out_path = Path::new(out_path_string);
@@ -81,7 +78,7 @@ fn main() {
                 Err(err) => panic!("{}", err),
             };
             let mut writer = BufWriter::new(file);
-            match writer.write(tree.to_xml().as_bytes()) {
+            match writer.write(xml.as_bytes()) {
                 Ok(_) => {}
                 Err(err) => panic!("{}", err),
             };
