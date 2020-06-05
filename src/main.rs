@@ -33,7 +33,7 @@ fn tokens_for_file(path: &Path) -> Vec<Token> {
     }
 }
 
-fn xml_from_tokens(tokens: Vec<Token>) -> String {
+fn vm_from_tokens(tokens: Vec<Token>) -> String {
     let mut parser = Parser::new(VecDeque::from(tokens));
 
     parser.parse()
@@ -69,16 +69,16 @@ fn main() {
             let path_string = &format!("{}/{}", args[1], file);
             let path = Path::new(path_string);
             let tokens = tokens_for_file(path);
-            let xml = xml_from_tokens(tokens);
+            let vm = vm_from_tokens(tokens);
 
-            let out_path_string = &format!("{}/{}.xml", args[1], file);
+            let out_path_string = &format!("{}/{}.vm", args[1], file);
             let out_path = Path::new(out_path_string);
             let file = match File::create(out_path) {
                 Ok(file) => file,
                 Err(err) => panic!("{}", err),
             };
             let mut writer = BufWriter::new(file);
-            match writer.write(xml.as_bytes()) {
+            match writer.write(vm.as_bytes()) {
                 Ok(_) => {}
                 Err(err) => panic!("{}", err),
             };

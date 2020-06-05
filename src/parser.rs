@@ -258,12 +258,12 @@ impl Parser {
 
 		if self.peek().value == "[" {
 			self.next(); // [
-			result.push_str(&self.parse_expression());
+			self.parse_expression();
 			self.next(); // ]
 		}
 
 		self.next(); // =
-		result.push_str(&self.parse_expression());
+		self.parse_expression();
 		self.next(); // ;
 		result
 	}
@@ -273,18 +273,18 @@ impl Parser {
 		self.next(); // if
 		self.next(); // (
 
-		result.push_str(&self.parse_expression());
+		self.parse_expression();
 
 		self.next(); // )
 		self.next(); // {
 
-		result.push_str(&self.parse_statements());
+		self.parse_statements();
 		self.next(); // }
 		if self.peek().value == "else" {
 			self.next(); // else
 			self.next(); // {
 
-			result.push_str(&self.parse_statements());
+			self.parse_statements();
 
 			self.next(); // }
 		}
@@ -296,10 +296,10 @@ impl Parser {
 		let mut result = String::new();
 		self.next(); // while
 		self.next(); // (
-		result.push_str(&self.parse_expression());
+		&self.parse_expression();
 		self.next(); // )
 		self.next(); // {
-		result.push_str(&self.parse_statements());
+		&self.parse_statements();
 		self.next(); // }
 		result
 	}
@@ -307,7 +307,7 @@ impl Parser {
 	fn parse_do_statement(&mut self) -> String {
 		let mut result = String::new();
 		self.next(); // do
-		result.push_str(&self.parse_subroutine_call());
+		self.parse_subroutine_call();
 		self.next(); // ;
 		result
 	}
@@ -316,7 +316,7 @@ impl Parser {
 		let mut result = String::new();
 		self.next(); // return
 		if self.peek().value != ";" {
-			result.push_str(&self.parse_expression());
+			self.parse_expression();
 		};
 		self.next(); // ;
 		result
