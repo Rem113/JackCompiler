@@ -1,12 +1,85 @@
 use crate::tokenizer::{Token, TokenType};
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
+
+#[derive(Clone)]
+struct Symbol {
+	pub kind: String,
+	pub typing: String,
+	pub index: u8,
+}
 
 pub struct Parser {
 	tokens: VecDeque<Token>,
+	class_symbol_table: HashMap<String, Symbol>,
+	func_symbol_table: HashMap<String, Symbol>,
 }
 
 impl Parser {
+	fn find_symbol(&self, map: &HashMap<String, Symbol>, name: String) -> Symbol {
+		map.get(&name).unwrap().clone()
+	}
+
+	fn find_symbol_in_class(&self, name: String) -> Symbol {
+		self.find_symbol(&self.class_symbol_table, name)
+	}
+
+	fn new_func_symbol_table(&mut self) {
+		self.func_symbol_table = HashMap::new();
+	}
+
+	fn find_symbol_in_func(&self, name: String) -> Symbol {
+		self.find_symbol(&self.func_symbol_table, name)
+	}
+
+	fn add_symbol_in_class(&mut self, name: String, kind: String, typing: String) {
+		let mut index = 0;
+		let same_kind: Vec<(&String, &Symbol)> = self
+			.class_symbol_table
+			.iter()
+			.filter(|(_, sym)| sym.kind == kind)
+			.collect();
+		if same_kind.len() != 0 {
+			let (_, max_sym) = same_kind
+				.iter()
+				.max_by(|(_, sym1), (_, sym2)| sym1.index.cmp(&sym2.index))
+				.unwrap();
+			index = max_sym.index + 1;
+		};
+		self.class_symbol_table.insert(
+			name,
+			Symbol {
+				kind: kind,
+				typing: typing,
+				index: index,
+			},
+		);
+	}
+
+	fn add_symbol_in_func(&mut self, name: String, kind: String, typing: String) {
+		let mut index = 0;
+		let same_kind: Vec<(&String, &Symbol)> = self
+			.func_symbol_table
+			.iter()
+			.filter(|(_, sym)| sym.kind == kind)
+			.collect();
+		if same_kind.len() != 0 {
+			let (_, max_sym) = same_kind
+				.iter()
+				.max_by(|(_, sym1), (_, sym2)| sym1.index.cmp(&sym2.index))
+				.unwrap();
+			index = max_sym.index + 1;
+		};
+		self.func_symbol_table.insert(
+			name,
+			Symbol {
+				kind: kind,
+				typing: typing,
+				index: index,
+			},
+		);
+	}
+
 	fn next(&mut self) -> Token {
 		self.tokens.pop_front().unwrap()
 	}
@@ -42,7 +115,7 @@ impl Parser {
 			result.push_str(&self.parse_subroutine_dec());
 		}
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</class>\n"));
+		result.push_str("</class>\n");
 		result
 	}
 
@@ -68,14 +141,14 @@ impl Parser {
 
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 		result.push_str(&self.parse_subroutine_body());
-		result.push_str(&format!("</subroutine_dec>\n"));
+		result.push_str("</subroutine_dec>\n");
 		result
 	}
 
 	fn parse_subroutine_name(&mut self) -> String {
 		let mut result = String::from("<subroutine_name>\n");
 		result.push_str(&format!("<identifier>{}</identifier>\n", self.next().value));
-		result.push_str(&format!("</subroutine_name>\n"));
+		result.push_str("</subroutine_name>\n");
 		result
 	}
 
@@ -99,7 +172,7 @@ impl Parser {
 		};
 
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</subroutine_body>\n"));
+		result.push_str("</subroutine_body>\n");
 		result
 	}
 
@@ -114,7 +187,7 @@ impl Parser {
 
 			if next_token.value == ";" {
 				result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-				result.push_str(&format!("</var_dec>\n"));
+				result.push_str("</var_dec>\n");
 				return result;
 			}
 
@@ -136,7 +209,7 @@ impl Parser {
 						&& next_token.value != "do"
 						&& next_token.value != "return"
 					{
-						result.push_str(&format!("</statements>\n"));
+						result.push_str("</statements>\n");
 						return Some(result);
 					}
 
@@ -172,7 +245,7 @@ impl Parser {
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 		result.push_str(&self.parse_expression());
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</let_statement>\n"));
+		result.push_str("</let_statement>\n");
 		result
 	}
 
@@ -204,7 +277,7 @@ impl Parser {
 			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 		}
 
-		result.push_str(&format!("</if_statement>\n"));
+		result.push_str("</if_statement>\n");
 		result
 	}
 
@@ -221,7 +294,7 @@ impl Parser {
 			None => {}
 		};
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</while_statement>\n"));
+		result.push_str("</while_statement>\n");
 		result
 	}
 
@@ -230,7 +303,7 @@ impl Parser {
 		result.push_str(&format!("<keyword>{}</keyword>\n", self.next().value));
 		result.push_str(&self.parse_subroutine_call());
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</do_statement>\n"));
+		result.push_str("</do_statement>\n");
 		result
 	}
 
@@ -243,7 +316,7 @@ impl Parser {
 		};
 
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</return_statement>\n"));
+		result.push_str("</return_statement>\n");
 		result
 	}
 
@@ -270,7 +343,7 @@ impl Parser {
 		};
 
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</subroutine_call>\n"));
+		result.push_str("</subroutine_call>\n");
 		result
 	}
 
@@ -281,7 +354,7 @@ impl Parser {
 			result.push_str(&self.parse_expression());
 
 			if self.peek().value != "," {
-				result.push_str(&format!("</expression_list>\n"));
+				result.push_str("</expression_list>\n");
 				return result;
 			};
 
@@ -306,7 +379,7 @@ impl Parser {
 				&& op_or_else.value != ">"
 				&& op_or_else.value != "="
 			{
-				result.push_str(&format!("</expression>\n"));
+				result.push_str("</expression>\n");
 				return result;
 			}
 
@@ -318,7 +391,7 @@ impl Parser {
 	fn parse_op(&mut self) -> String {
 		let mut result = String::from("<op>\n");
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("</op>\n"));
+		result.push_str("</op>\n");
 		result
 	}
 
@@ -329,12 +402,12 @@ impl Parser {
 
 		if next_token.token == TokenType::IntegerConstant {
 			result.push_str(&self.parse_integer_constant());
-			result.push_str(&format!("</term>\n"));
+			result.push_str("</term>\n");
 			return result;
 		};
 		if next_token.token == TokenType::StringConstant {
 			result.push_str(&self.parse_string_constant());
-			result.push_str(&format!("</term>\n"));
+			result.push_str("</term>\n");
 			return result;
 		};
 		if next_token.value == "true"
@@ -343,7 +416,7 @@ impl Parser {
 			|| next_token.value == "this"
 		{
 			result.push_str(&self.parse_keyword_constant());
-			result.push_str(&format!("</term>\n"));
+			result.push_str("</term>\n");
 			return result;
 		};
 
@@ -352,14 +425,14 @@ impl Parser {
 
 			result.push_str(&self.parse_expression());
 			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-			result.push_str(&format!("</term>\n"));
+			result.push_str("</term>\n");
 			return result;
 		};
 
 		if next_token.value == "-" || next_token.value == "~" {
 			result.push_str(&self.parse_unary_op());
 			result.push_str(&self.parse_term());
-			result.push_str(&format!("</op>\n"));
+			result.push_str("</op>\n");
 			return result;
 		};
 
@@ -378,7 +451,7 @@ impl Parser {
 
 			result.push_str(&self.parse_expression());
 			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-			result.push_str(&format!("</term>\n"));
+			result.push_str("</term>\n");
 			return result;
 		};
 
@@ -386,7 +459,7 @@ impl Parser {
 		if bracket_or_else.value == "(" || bracket_or_else.value == "." {
 			self.tokens.insert(0, var_name_or_sub_name);
 			result.push_str(&self.parse_subroutine_call());
-			result.push_str(&format!("</term>\n"));
+			result.push_str("</term>\n");
 			return result;
 		};
 
@@ -394,7 +467,7 @@ impl Parser {
 		self.tokens.insert(0, var_name_or_sub_name);
 
 		result.push_str(&self.parse_var_name());
-		result.push_str(&format!("</term>\n"));
+		result.push_str("</term>\n");
 		return result;
 	}
 
@@ -443,7 +516,7 @@ impl Parser {
 			let comma_or_else = self.next();
 
 			if comma_or_else.value != "," {
-				result.push_str(&format!("</parameter_list>\n"));
+				result.push_str("</parameter_list>\n");
 				return Some(result);
 			};
 
@@ -466,7 +539,7 @@ impl Parser {
 			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 
 			if comma_or_semi.value == ";" {
-				result.push_str(&format!("</class_var_dec>\n"));
+				result.push_str("</class_var_dec>\n");
 				return result;
 			}
 		}
@@ -475,7 +548,7 @@ impl Parser {
 	fn parse_var_name(&mut self) -> String {
 		let mut result = String::from("<var_name>\n");
 		result.push_str(&format!("<identifier>{}</identifier>\n", self.next().value));
-		result.push_str(&format!("</var_name>\n"));
+		result.push_str("</var_name>\n");
 		result
 	}
 
@@ -490,19 +563,23 @@ impl Parser {
 			result.push_str(&self.parse_class_name())
 		};
 
-		result.push_str(&format!("</type>\n"));
+		result.push_str("</type>\n");
 		result
 	}
 
 	fn parse_class_name(&mut self) -> String {
 		let mut result = String::from("<class_name>\n");
 		result.push_str(&format!("<identifier>{}</identifier>\n", self.next().value));
-		result.push_str(&format!("</class_name>\n"));
+		result.push_str("</class_name>\n");
 		result
 	}
 
 	pub fn new(tokens: VecDeque<Token>) -> Parser {
-		Parser { tokens: tokens }
+		Parser {
+			tokens: tokens,
+			class_symbol_table: HashMap::new(),
+			func_symbol_table: HashMap::new(),
+		}
 	}
 
 	pub fn parse(&mut self) -> String {
