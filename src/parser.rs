@@ -169,10 +169,7 @@ impl Parser {
 			self.parse_var_dec();
 		}
 
-		match self.parse_statements() {
-			Some(elem) => result.push_str(&elem),
-			None => {}
-		};
+		result.push_str(&self.parse_statements());
 
 		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 		result.push_str("</subroutine_body>\n");
@@ -246,85 +243,68 @@ impl Parser {
 	}
 
 	fn parse_if_statement(&mut self) -> String {
-		let mut result = String::from("<if_statement>\n");
+		let mut result = String::new();
+		self.next(); // if
+		self.next(); // (
 
-		result.push_str(&format!("<keyword>{}</keyword>\n", self.next().value));
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 		result.push_str(&self.parse_expression());
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
 
-		match self.parse_statements() {
-			Some(elem) => result.push_str(&elem),
-			None => {}
-		};
+		self.next(); // )
+		self.next(); // {
 
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-
+		result.push_str(&self.parse_statements());
+		self.next(); // }
 		if self.peek().value == "else" {
-			result.push_str(&format!("<keyword>{}</keyword>\n", self.next().value));
-			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
+			self.next(); // else
+			self.next(); // {
 
-			match self.parse_statements() {
-				Some(elem) => result.push_str(&elem),
-				None => {}
-			};
+			result.push_str(&self.parse_statements());
 
-			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
+			self.next(); // }
 		}
 
-		result.push_str("</if_statement>\n");
 		result
 	}
 
 	fn parse_while_statement(&mut self) -> String {
-		let mut result = String::from("<while_statement>\n");
-		result.push_str(&format!("<keyword>{}</keyword>\n", self.next().value));
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
+		let mut result = String::new();
+		self.next(); // while
+		self.next(); // (
 		result.push_str(&self.parse_expression());
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-
-		match self.parse_statements() {
-			Some(elem) => result.push_str(&elem),
-			None => {}
-		};
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str("</while_statement>\n");
+		self.next(); // )
+		self.next(); // {
+		result.push_str(&self.parse_statements());
+		self.next(); // }
 		result
 	}
 
 	fn parse_do_statement(&mut self) -> String {
-		let mut result = String::from("<do_statement>\n");
-		result.push_str(&format!("<keyword>{}</keyword>\n", self.next().value));
+		let mut result = String::new();
+		self.next(); // do
 		result.push_str(&self.parse_subroutine_call());
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str("</do_statement>\n");
+		self.next(); // ;
 		result
 	}
 
 	fn parse_return_statement(&mut self) -> String {
-		let mut result = String::from("<return_statement>\n");
-		result.push_str(&format!("<keyword>{}</keyword>\n", self.next().value));
-
+		let mut result = String::new();
+		self.next(); // return
 		if self.peek().value != ";" {
 			result.push_str(&self.parse_expression());
 		};
-
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str("</return_statement>\n");
+		self.next(); // ;
 		result
 	}
 
 	fn parse_subroutine_call(&mut self) -> String {
-		let mut result = String::from("<subroutine_call>\n");
+		let mut result = String::new();
 		let func_or_class = self.next();
 
 		match self.peek().value.as_str() {
 			"." => {
 				self.tokens.insert(0, func_or_class);
 				result.push_str(&self.parse_class_name());
-				result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
+				self.next(); // .
 				result.push_str(&self.parse_subroutine_name());
 			}
 			_ => {
@@ -332,34 +312,33 @@ impl Parser {
 			}
 		};
 
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
+		self.next(); // (
 
 		if self.peek().value != ")" {
 			result.push_str(&self.parse_expression_list());
 		};
 
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str("</subroutine_call>\n");
+		self.next(); // )
+
 		result
 	}
 
 	fn parse_expression_list(&mut self) -> String {
-		let mut result = String::from("<expression_list>\n");
+		let mut result = String::new();
 
 		loop {
 			result.push_str(&self.parse_expression());
 
 			if self.peek().value != "," {
-				result.push_str("</expression_list>\n");
 				return result;
 			};
 
-			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
+			self.next(); // ,
 		}
 	}
 
 	fn parse_expression(&mut self) -> String {
-		let mut result = String::from("<expression>\n");
+		let mut result = String::new();
 		result.push_str(&self.parse_term());
 
 		loop {
@@ -375,7 +354,6 @@ impl Parser {
 				&& op_or_else.value != ">"
 				&& op_or_else.value != "="
 			{
-				result.push_str("</expression>\n");
 				return result;
 			}
 
@@ -385,25 +363,20 @@ impl Parser {
 	}
 
 	fn parse_op(&mut self) -> String {
-		let mut result = String::from("<op>\n");
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str("</op>\n");
-		result
+		self.next().value
 	}
 
 	fn parse_term(&mut self) -> String {
-		let mut result = String::from("<term>\n");
+		let mut result = String::new();
 
 		let next_token = self.peek();
 
 		if next_token.token == TokenType::IntegerConstant {
 			result.push_str(&self.parse_integer_constant());
-			result.push_str("</term>\n");
 			return result;
 		};
 		if next_token.token == TokenType::StringConstant {
 			result.push_str(&self.parse_string_constant());
-			result.push_str("</term>\n");
 			return result;
 		};
 		if next_token.value == "true"
@@ -412,23 +385,19 @@ impl Parser {
 			|| next_token.value == "this"
 		{
 			result.push_str(&self.parse_keyword_constant());
-			result.push_str("</term>\n");
 			return result;
 		};
 
 		if next_token.value == "(" {
-			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-
+			self.next(); // (
 			result.push_str(&self.parse_expression());
-			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-			result.push_str("</term>\n");
+			self.next(); // )
 			return result;
 		};
 
 		if next_token.value == "-" || next_token.value == "~" {
 			result.push_str(&self.parse_unary_op());
 			result.push_str(&self.parse_term());
-			result.push_str("</op>\n");
 			return result;
 		};
 
@@ -439,15 +408,10 @@ impl Parser {
 
 		// Var[]
 		if bracket_or_else.value == "[" {
-			result.push_str(&format!(
-				"<identifier>{}</identifier>\n",
-				var_name_or_sub_name.value
-			));
-			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-
+			let var_name = var_name_or_sub_name.value;
+			self.next(); // [
 			result.push_str(&self.parse_expression());
-			result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-			result.push_str("</term>\n");
+			self.next(); // ]
 			return result;
 		};
 
@@ -455,7 +419,6 @@ impl Parser {
 		if bracket_or_else.value == "(" || bracket_or_else.value == "." {
 			self.tokens.insert(0, var_name_or_sub_name);
 			result.push_str(&self.parse_subroutine_call());
-			result.push_str("</term>\n");
 			return result;
 		};
 
@@ -463,33 +426,23 @@ impl Parser {
 		self.tokens.insert(0, var_name_or_sub_name);
 
 		result.push_str(&self.parse_var_name());
-		result.push_str("</term>\n");
 		return result;
 	}
 
 	fn parse_unary_op(&mut self) -> String {
-		String::from(format!("<unary_op>{}</unary_op>\n", self.next().value))
+		self.next().value
 	}
 
 	fn parse_integer_constant(&mut self) -> String {
-		String::from(format!(
-			"<integer_constant>{}</integer_constant>\n",
-			self.next().value
-		))
+		self.next().value
 	}
 
 	fn parse_string_constant(&mut self) -> String {
-		String::from(format!(
-			"<string_constant>{}</string_constant>\n",
-			self.next().value
-		))
+		self.next().value
 	}
 
 	fn parse_keyword_constant(&mut self) -> String {
-		String::from(format!(
-			"<keyword_constant>{}</keyword_constant>\n",
-			self.next().value
-		))
+		self.next().value
 	}
 
 	fn parse_parameter_list(&mut self) {
