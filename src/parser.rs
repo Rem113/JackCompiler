@@ -17,6 +17,24 @@ pub struct Parser {
 }
 
 impl Parser {
+	fn print_class_symbols(&self) {
+		self.class_symbol_table.iter().for_each(|(name, symbol)| {
+			println!(
+				"{}: {}, {}, {}",
+				name, symbol.kind, symbol.typing, symbol.index
+			)
+		});
+	}
+
+	fn print_func_symbols(&self) {
+		self.func_symbol_table.iter().for_each(|(name, symbol)| {
+			println!(
+				"{}: {}, {}, {}",
+				name, symbol.kind, symbol.typing, symbol.index
+			)
+		});
+	}
+
 	fn find_symbol(&self, map: &HashMap<String, Symbol>, name: &String) -> Symbol {
 		map.get(name).unwrap().clone()
 	}
@@ -105,6 +123,10 @@ impl Parser {
 			self.parse_class_var_dec();
 		}
 
+		// TODO: Remove this
+		self.print_class_symbols();
+		println!();
+
 		let mut result = String::new();
 
 		// Optional subroutines declaration
@@ -147,7 +169,11 @@ impl Parser {
 
 		self.next(); // {
 		result.push_str(&self.parse_subroutine_body());
-		result.push_str("</subroutine_dec>\n");
+
+		// TODO: Remove this
+		self.print_func_symbols();
+		println!();
+
 		result
 	}
 
@@ -171,8 +197,7 @@ impl Parser {
 
 		result.push_str(&self.parse_statements());
 
-		result.push_str(&format!("<symbol>{}</symbol>\n", self.next().value));
-		result.push_str("</subroutine_body>\n");
+		self.next(); // }
 		result
 	}
 
@@ -188,6 +213,7 @@ impl Parser {
 
 			if next_token.value == ";" {
 				self.next(); // ;
+				return;
 			}
 
 			self.next(); // ,
@@ -462,11 +488,13 @@ impl Parser {
 
 			self.add_symbol_in_func(&name, &"argument".to_string(), &typing);
 
-			let comma_or_else = self.next();
+			let comma_or_else = self.peek();
 
 			if comma_or_else.value != "," {
 				return;
 			};
+
+			self.next(); // ,
 		}
 	}
 
