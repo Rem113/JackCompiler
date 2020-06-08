@@ -17,38 +17,24 @@ pub struct Parser {
 }
 
 impl Parser {
-	fn print_class_symbols(&self) {
-		self.class_symbol_table.iter().for_each(|(name, symbol)| {
-			println!(
-				"{}: {}, {}, {}",
-				name, symbol.kind, symbol.typing, symbol.index
-			)
-		});
+	fn get_func_local_count(&self) -> usize {
+		self
+			.func_symbol_table
+			.iter()
+			.filter(|(_, symbol)| symbol.kind == "local")
+			.count()
 	}
 
-	fn print_func_symbols(&self) {
-		self.func_symbol_table.iter().for_each(|(name, symbol)| {
-			println!(
-				"{}: {}, {}, {}",
-				name, symbol.kind, symbol.typing, symbol.index
-			)
-		});
+	fn find_symbol_in_class(&self, name: &String) -> Option<&Symbol> {
+		self.class_symbol_table.get(name)
 	}
 
-	fn find_symbol(&self, map: &HashMap<String, Symbol>, name: &String) -> Symbol {
-		map.get(name).unwrap().clone()
-	}
-
-	fn find_symbol_in_class(&self, name: &String) -> Symbol {
-		self.find_symbol(&self.class_symbol_table, name)
+	fn find_symbol_in_func(&self, name: &String) -> Option<&Symbol> {
+		self.func_symbol_table.get(name)
 	}
 
 	fn new_func_symbol_table(&mut self) {
 		self.func_symbol_table = HashMap::new();
-	}
-
-	fn find_symbol_in_func(&self, name: &String) -> Symbol {
-		self.find_symbol(&self.func_symbol_table, name)
 	}
 
 	fn add_symbol_in_class(&mut self, name: &String, kind: &String, typing: &String) {
@@ -123,10 +109,6 @@ impl Parser {
 			self.parse_class_var_dec();
 		}
 
-		// TODO: Remove this
-		self.print_class_symbols();
-		println!();
-
 		let mut result = String::new();
 
 		// Optional subroutines declaration
@@ -168,11 +150,13 @@ impl Parser {
 		self.parse_parameter_list();
 
 		self.next(); // {
-		result.push_str(&self.parse_subroutine_body());
-
-		// TODO: Remove this
-		self.print_func_symbols();
-		println!();
+		let subroutine_body = self.parse_subroutine_body();
+		let local_count = self.get_func_local_count();
+		result.push_str(&format!(
+			"function {}.{} {}\n",
+			self.class_name, subroutine_name, local_count
+		));
+		result.push_str(&subroutine_body);
 
 		result
 	}
@@ -256,15 +240,45 @@ impl Parser {
 		self.next(); // let
 		let var_name = self.parse_var_name();
 
+		let mut offset_code = String::new();
+
 		if self.peek().value == "[" {
 			self.next(); // [
-			self.parse_expression();
+			offset_code.push_str(&self.parse_expression());
 			self.next(); // ]
 		}
 
 		self.next(); // =
-		self.parse_expression();
+		result.push_str(&self.parse_expression());
 		self.next(); // ;
+
+		// Symbol of the assigned variable
+		let symbol = match self.find_symbol_in_func(&var_name) {
+			Some(sym) => sym,
+			None => match self.find_symbol_in_class(&var_name) {
+				Some(sym) => sym,
+				None => panic!("An error has occured"),
+			},
+		};
+
+		if offset_code.len() != 0 {
+			if symbol.kind == "field" {
+				result.push_str(&format!("push this {}\n", symbol.index));
+			} else {
+				result.push_str(&format!("push {} {}\n", symbol.kind, symbol.index));
+			};
+			result.push_str(offset_code.as_str());
+			result.push_str("add\n");
+			result.push_str("pop pointer 1\n");
+			result.push_str("pop that 0\n");
+		} else {
+			if symbol.kind == "field" {
+				result.push_str(&format!("pop this {}\n", symbol.index));
+			} else {
+				result.push_str(&format!("pop {} {}\n", symbol.kind, symbol.index));
+			};
+		}
+
 		result
 	}
 
@@ -273,18 +287,18 @@ impl Parser {
 		self.next(); // if
 		self.next(); // (
 
-		self.parse_expression();
+		result.push_str(&self.parse_expression());
 
 		self.next(); // )
 		self.next(); // {
 
-		self.parse_statements();
+		result.push_str(&self.parse_statements());
 		self.next(); // }
 		if self.peek().value == "else" {
 			self.next(); // else
 			self.next(); // {
 
-			self.parse_statements();
+			result.push_str(&self.parse_statements());
 
 			self.next(); // }
 		}
@@ -296,10 +310,10 @@ impl Parser {
 		let mut result = String::new();
 		self.next(); // while
 		self.next(); // (
-		&self.parse_expression();
+		result.push_str(&self.parse_expression());
 		self.next(); // )
 		self.next(); // {
-		&self.parse_statements();
+		result.push_str(&self.parse_statements());
 		self.next(); // }
 		result
 	}
@@ -307,7 +321,7 @@ impl Parser {
 	fn parse_do_statement(&mut self) -> String {
 		let mut result = String::new();
 		self.next(); // do
-		self.parse_subroutine_call();
+		result.push_str(&self.parse_subroutine_call());
 		self.next(); // ;
 		result
 	}
@@ -316,8 +330,11 @@ impl Parser {
 		let mut result = String::new();
 		self.next(); // return
 		if self.peek().value != ";" {
-			self.parse_expression();
+			result.push_str(&self.parse_expression());
+		} else {
+			result.push_str("push constant 0\n");
 		};
+		result.push_str("return\n");
 		self.next(); // ;
 		result
 	}
@@ -326,38 +343,50 @@ impl Parser {
 		let mut result = String::new();
 		let func_or_class = self.next();
 
+		let mut function_name;
+
 		match self.peek().value.as_str() {
 			"." => {
 				self.tokens.insert(0, func_or_class);
-				result.push_str(&self.parse_class_name());
+				function_name = self.parse_class_name();
 				self.next(); // .
-				result.push_str(&self.parse_subroutine_name());
+				function_name = format!("{}.{}", function_name, self.parse_subroutine_name());
 			}
 			_ => {
-				result.push_str(&self.parse_subroutine_name());
+				function_name = self.parse_subroutine_name();
 			}
 		};
 
 		self.next(); // (
 
+		let mut param_count = 0;
+
 		if self.peek().value != ")" {
-			result.push_str(&self.parse_expression_list());
+			let (count, code) = self.parse_expression_list();
+			param_count = count;
+			result.push_str(&code);
 		};
 
 		self.next(); // )
 
+		result.push_str(&format!("call {} {}\n", function_name, param_count));
+
 		result
 	}
 
-	fn parse_expression_list(&mut self) -> String {
+	fn parse_expression_list(&mut self) -> (u8, String) {
 		let mut result = String::new();
+
+		let mut count = 1;
 
 		loop {
 			result.push_str(&self.parse_expression());
 
 			if self.peek().value != "," {
-				return result;
+				return (count, result);
 			};
+
+			count += 1;
 
 			self.next(); // ,
 		}
@@ -379,12 +408,27 @@ impl Parser {
 				&& op_or_else.value != "<"
 				&& op_or_else.value != ">"
 				&& op_or_else.value != "="
+				&& op_or_else.value != "~"
 			{
 				return result;
 			}
 
-			result.push_str(&self.parse_op());
+			let op = self.parse_op();
 			result.push_str(&self.parse_term());
+
+			match op.as_str() {
+				"+" => result.push_str("add\n"),
+				"-" => result.push_str("sub\n"),
+				"*" => result.push_str("call Math.multiply 2\n"),
+				"/" => result.push_str("call Math.divide 2\n"),
+				"&" => result.push_str("and\n"),
+				"|" => result.push_str("or\n"),
+				"<" => result.push_str("lt\n"),
+				">" => result.push_str("gt\n"),
+				"=" => result.push_str("eq\n"),
+				"~" => result.push_str("neg\n"),
+				_ => panic!("An error has occured"),
+			}
 		}
 	}
 
@@ -398,11 +442,20 @@ impl Parser {
 		let next_token = self.peek();
 
 		if next_token.token == TokenType::IntegerConstant {
-			result.push_str(&self.parse_integer_constant());
+			let integer_constant = self.parse_integer_constant();
+			result.push_str(&format!("push constant {}\n", integer_constant));
 			return result;
 		};
 		if next_token.token == TokenType::StringConstant {
-			result.push_str(&self.parse_string_constant());
+			let string_constant = self.parse_string_constant();
+			result.push_str(&format!("push constant {}\n", string_constant.len()));
+			result.push_str(&format!("call String.new 1\n"));
+
+			for c in string_constant.chars() {
+				result.push_str(&format!("push constant {}\n", c as u8));
+				result.push_str(&format!("call String.appendChar 2\n"));
+			}
+
 			return result;
 		};
 		if next_token.value == "true"
@@ -410,10 +463,23 @@ impl Parser {
 			|| next_token.value == "null"
 			|| next_token.value == "this"
 		{
-			result.push_str(&self.parse_keyword_constant());
+			let keyword_constant = self.parse_keyword_constant();
+
+			match keyword_constant.as_str() {
+				"true" => {
+					result.push_str("push constant 0\n");
+					result.push_str("neg\n")
+				}
+				"false" => result.push_str("push constant 0\n"),
+				"null" => result.push_str("push constant 0\n"),
+				"this" => result.push_str("push pointer 0\n"),
+				_ => panic!("An error has occured"),
+			}
+
 			return result;
 		};
 
+		// (expression)
 		if next_token.value == "(" {
 			self.next(); // (
 			result.push_str(&self.parse_expression());
@@ -421,9 +487,18 @@ impl Parser {
 			return result;
 		};
 
+		// unary_op term
 		if next_token.value == "-" || next_token.value == "~" {
-			result.push_str(&self.parse_unary_op());
+			let unary_op = self.parse_unary_op();
+
 			result.push_str(&self.parse_term());
+
+			match &unary_op[..] {
+				"-" => result.push_str("neg\n"),
+				"~" => result.push_str("not\n"),
+				_ => panic!("An error has occured"),
+			};
+
 			return result;
 		};
 
@@ -435,8 +510,29 @@ impl Parser {
 		// Var[]
 		if bracket_or_else.value == "[" {
 			let var_name = var_name_or_sub_name.value;
+
 			self.next(); // [
 			result.push_str(&self.parse_expression());
+
+			let symbol = match self.find_symbol_in_func(&var_name) {
+				Some(sym) => sym,
+				None => match self.find_symbol_in_class(&var_name) {
+					Some(sym) => sym,
+					None => panic!("An error has occured"),
+				},
+			};
+
+			match symbol.kind.as_str() {
+				"field" => result.push_str(&format!("push this {}\n", symbol.index)),
+				"argument" | "static" | "local" => {
+					result.push_str(&format!("push {} {}\n", symbol.kind, symbol.index))
+				}
+				_ => panic!("An error has occured"),
+			};
+
+			result.push_str("add\n");
+			result.push_str("pop pointer 1\n");
+			result.push_str("push that 0\n");
 			self.next(); // ]
 			return result;
 		};
@@ -451,7 +547,23 @@ impl Parser {
 		// Var name
 		self.tokens.insert(0, var_name_or_sub_name);
 
-		result.push_str(&self.parse_var_name());
+		let var_name = self.parse_var_name();
+
+		let symbol = match self.find_symbol_in_func(&var_name) {
+			Some(sym) => sym,
+			None => match self.find_symbol_in_class(&var_name) {
+				Some(sym) => sym,
+				None => panic!("An error has occured"),
+			},
+		};
+		match symbol.kind.as_str() {
+			"field" => result.push_str(&format!("push this {}\n", symbol.index)),
+			"argument" | "static" | "local" => {
+				result.push_str(&format!("push {} {}\n", symbol.kind, symbol.index))
+			}
+			_ => panic!("An error has occured"),
+		};
+
 		return result;
 	}
 

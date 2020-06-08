@@ -71,7 +71,9 @@ fn main() {
             let tokens = tokens_for_file(path);
             let vm = vm_from_tokens(tokens);
 
-            let out_path_string = &format!("{}/{}.vm", args[1], file);
+            let mut out_file_name = file.clone();
+            out_file_name.truncate(file.len() - 5);
+            let out_path_string = &format!("{}/{}.vm", args[1], out_file_name);
             let out_path = Path::new(out_path_string);
             let file = match File::create(out_path) {
                 Ok(file) => file,
