@@ -14,6 +14,7 @@ pub struct Parser {
 	class_name: String,
 	class_symbol_table: HashMap<String, Symbol>,
 	func_symbol_table: HashMap<String, Symbol>,
+	label_count: u8,
 }
 
 impl Parser {
@@ -23,6 +24,11 @@ impl Parser {
 			.iter()
 			.filter(|(_, symbol)| symbol.kind == "local")
 			.count()
+	}
+
+	fn get_label(&mut self) -> String {
+		self.label_count += 1;
+		String::from(&format!("{}{}", self.class_name, self.label_count - 1))
 	}
 
 	fn find_symbol_in_class(&self, name: &String) -> Option<&Symbol> {
@@ -288,11 +294,17 @@ impl Parser {
 		self.next(); // (
 
 		result.push_str(&self.parse_expression());
+		result.push_str("not\n");
+		let label_false = self.get_label();
+		let label_true = self.get_label();
+		result.push_str(&format!("if-goto {}\n", label_false));
 
 		self.next(); // )
 		self.next(); // {
 
 		result.push_str(&self.parse_statements());
+		result.push_str(&format!("goto {}\n", label_true));
+		result.push_str(&format!("label {}\n", label_false));
 		self.next(); // }
 		if self.peek().value == "else" {
 			self.next(); // else
@@ -302,6 +314,7 @@ impl Parser {
 
 			self.next(); // }
 		}
+		result.push_str(&format!("label {}\n", label_true));
 
 		result
 	}
@@ -652,6 +665,7 @@ impl Parser {
 			class_name: String::new(),
 			class_symbol_table: HashMap::new(),
 			func_symbol_table: HashMap::new(),
+			label_count: 0,
 		}
 	}
 
