@@ -406,7 +406,10 @@ impl Parser {
 				};
 			}
 			_ => {
-				function_name.push_str(&self.parse_subroutine_name());
+				this_arg = true;
+				param_count += 1;
+				result.push_str("push pointer 0\n");
+				function_name.push_str(&format!("{}.{}", self.class_name, func_or_class_name.value));
 			}
 		};
 
@@ -414,7 +417,7 @@ impl Parser {
 
 		if self.peek().value != ")" {
 			let (count, code) = self.parse_expression_list();
-			param_count = count;
+			param_count += count;
 			result.push_str(&code);
 		};
 
@@ -523,7 +526,7 @@ impl Parser {
 			match keyword_constant.as_str() {
 				"true" => {
 					result.push_str("push constant 0\n");
-					result.push_str("neg\n")
+					result.push_str("not\n")
 				}
 				"false" => result.push_str("push constant 0\n"),
 				"null" => result.push_str("push constant 0\n"),
