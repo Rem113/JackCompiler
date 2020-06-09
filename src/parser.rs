@@ -321,12 +321,19 @@ impl Parser {
 
 	fn parse_while_statement(&mut self) -> String {
 		let mut result = String::new();
+		let loop_label = self.get_label();
+		let end_label = self.get_label();
+		result.push_str(&format!("label {}\n", loop_label));
 		self.next(); // while
 		self.next(); // (
 		result.push_str(&self.parse_expression());
+		result.push_str("not\n");
+		result.push_str(&format!("if-goto {}\n", end_label));
 		self.next(); // )
 		self.next(); // {
 		result.push_str(&self.parse_statements());
+		result.push_str(&format!("goto {}\n", loop_label));
+		result.push_str(&format!("label {}\n", end_label));
 		self.next(); // }
 		result
 	}
