@@ -26,17 +26,24 @@ impl Parser {
 			.count()
 	}
 
+	fn get_class_field_count(&self) -> usize {
+		self
+			.class_symbol_table
+			.iter()
+			.filter(|(_, symbol)| symbol.kind == "field")
+			.count()
+	}
+
 	fn get_label(&mut self) -> String {
 		self.label_count += 1;
 		String::from(&format!("{}{}", self.class_name, self.label_count - 1))
 	}
 
-	fn find_symbol_in_class(&self, name: &String) -> Option<&Symbol> {
-		self.class_symbol_table.get(name)
-	}
-
-	fn find_symbol_in_func(&self, name: &String) -> Option<&Symbol> {
-		self.func_symbol_table.get(name)
+	fn find_symbol(&self, name: &String) -> Option<&Symbol> {
+		match self.func_symbol_table.get(name) {
+			Some(sym) => Some(sym),
+			None => self.class_symbol_table.get(name),
+		}
 	}
 
 	fn new_func_symbol_table(&mut self) {
@@ -140,12 +147,12 @@ impl Parser {
 		let mut result = String::new();
 		let kind = self.next().value; // function, method or constructor
 
-		if kind != "method" {
+		if kind == "method" {
 			self.add_symbol_in_func(
 				&"this".to_string(),
 				&"argument".to_string(),
 				&self.class_name.clone(),
-			)
+			);
 		}
 
 		self.next(); // void or type
@@ -156,12 +163,22 @@ impl Parser {
 		self.parse_parameter_list();
 
 		self.next(); // {
+
 		let subroutine_body = self.parse_subroutine_body();
 		let local_count = self.get_func_local_count();
 		result.push_str(&format!(
 			"function {}.{} {}\n",
 			self.class_name, subroutine_name, local_count
 		));
+		if kind == "constructor" {
+			result.push_str(&format!("push constant {}\n", self.get_class_field_count()));
+			result.push_str("call Memory.alloc 1\n");
+			result.push_str("pop pointer 0\n");
+		}
+		if kind == "method" {
+			result.push_str("push argument 0\n");
+			result.push_str("pop pointer 0\n");
+		}
 		result.push_str(&subroutine_body);
 
 		result
@@ -259,12 +276,9 @@ impl Parser {
 		self.next(); // ;
 
 		// Symbol of the assigned variable
-		let symbol = match self.find_symbol_in_func(&var_name) {
+		let symbol = match self.find_symbol(&var_name) {
 			Some(sym) => sym,
-			None => match self.find_symbol_in_class(&var_name) {
-				Some(sym) => sym,
-				None => panic!("An error has occured"),
-			},
+			None => panic!("An error has occured"),
 		};
 
 		if offset_code.len() != 0 {
@@ -361,25 +375,42 @@ impl Parser {
 
 	fn parse_subroutine_call(&mut self) -> String {
 		let mut result = String::new();
-		let func_or_class = self.next();
-
-		let mut function_name;
+		let func_or_class_name = self.next();
+		let mut function_name = String::new();
+		let mut param_count = 0;
+		let mut this_arg = false;
 
 		match self.peek().value.as_str() {
 			"." => {
-				self.tokens.insert(0, func_or_class);
-				function_name = self.parse_class_name();
+				self.tokens.insert(0, func_or_class_name.clone());
+				let class_or_instance_name = self.parse_class_name();
 				self.next(); // .
-				function_name = format!("{}.{}", function_name, self.parse_subroutine_name());
+				let subroutine_name = self.parse_subroutine_name();
+
+				match self.find_symbol(&class_or_instance_name) {
+					Some(symbol) => {
+						match symbol.kind.as_str() {
+							"field" => result.push_str(&format!("push this {}\n", symbol.index)),
+							"argument" | "static" | "local" => {
+								result.push_str(&format!("push {} {}\n", symbol.kind, symbol.index))
+							}
+							_ => panic!("An error has occured"),
+						};
+						function_name.push_str(&format!("{}.{}", symbol.typing, subroutine_name));
+						this_arg = true;
+						param_count += 1;
+					}
+					None => {
+						function_name.push_str(&format!("{}.{}", class_or_instance_name, subroutine_name))
+					}
+				};
 			}
 			_ => {
-				function_name = self.parse_subroutine_name();
+				function_name.push_str(&self.parse_subroutine_name());
 			}
 		};
 
 		self.next(); // (
-
-		let mut param_count = 0;
 
 		if self.peek().value != ")" {
 			let (count, code) = self.parse_expression_list();
@@ -390,6 +421,10 @@ impl Parser {
 		self.next(); // )
 
 		result.push_str(&format!("call {} {}\n", function_name, param_count));
+
+		if this_arg {
+			result.push_str(&format!("pop temp 0\n"));
+		}
 
 		result
 	}
@@ -534,12 +569,9 @@ impl Parser {
 			self.next(); // [
 			result.push_str(&self.parse_expression());
 
-			let symbol = match self.find_symbol_in_func(&var_name) {
+			let symbol = match self.find_symbol(&var_name) {
 				Some(sym) => sym,
-				None => match self.find_symbol_in_class(&var_name) {
-					Some(sym) => sym,
-					None => panic!("An error has occured"),
-				},
+				None => panic!("An error has occured"),
 			};
 
 			match symbol.kind.as_str() {
@@ -569,12 +601,9 @@ impl Parser {
 
 		let var_name = self.parse_var_name();
 
-		let symbol = match self.find_symbol_in_func(&var_name) {
+		let symbol = match self.find_symbol(&var_name) {
 			Some(sym) => sym,
-			None => match self.find_symbol_in_class(&var_name) {
-				Some(sym) => sym,
-				None => panic!("An error has occured"),
-			},
+			None => panic!("An error has occured"),
 		};
 		match symbol.kind.as_str() {
 			"field" => result.push_str(&format!("push this {}\n", symbol.index)),
