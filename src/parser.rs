@@ -379,7 +379,6 @@ impl Parser {
 		let func_or_class_name = self.next();
 		let mut function_name = String::new();
 		let mut param_count = 0;
-		let mut this_arg = false;
 
 		match self.peek().value.as_str() {
 			"." => {
@@ -398,7 +397,6 @@ impl Parser {
 							_ => panic!("An error has occured"),
 						};
 						function_name.push_str(&format!("{}.{}", symbol.typing, subroutine_name));
-						this_arg = true;
 						param_count += 1;
 					}
 					None => {
@@ -407,7 +405,6 @@ impl Parser {
 				};
 			}
 			_ => {
-				this_arg = true;
 				param_count += 1;
 				result.push_str("push pointer 0\n");
 				function_name.push_str(&format!("{}.{}", self.class_name, func_or_class_name.value));
@@ -425,10 +422,6 @@ impl Parser {
 		self.next(); // )
 
 		result.push_str(&format!("call {} {}\n", function_name, param_count));
-
-		if this_arg {
-			result.push_str(&format!("pop temp 0\n"));
-		}
 
 		result
 	}
