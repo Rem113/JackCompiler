@@ -356,6 +356,7 @@ impl Parser {
 		let mut result = String::new();
 		self.next(); // do
 		result.push_str(&self.parse_subroutine_call());
+		result.push_str("pop temp 0\n");
 		self.next(); // ;
 		result
 	}
